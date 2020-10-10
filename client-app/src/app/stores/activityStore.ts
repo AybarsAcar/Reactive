@@ -3,19 +3,15 @@ import {
   action,
   makeObservable,
   computed,
-  configure,
   runInAction,
 } from 'mobx';
-import { createContext, SyntheticEvent } from 'react';
+import { SyntheticEvent } from 'react';
 import { toast } from 'react-toastify';
 import { history } from '../..';
 import agent from '../api/agent';
+import { createAttendee, setActivityProps } from '../common/util/util';
 import { IActivity } from '../models/activity';
 import { RootStore } from './rootStore';
-
-configure({
-  enforceActions: 'always',
-});
 
 export default class ActivityStore {
   rootStore: RootStore;
@@ -25,6 +21,7 @@ export default class ActivityStore {
   @observable activity: IActivity | null = null;
   @observable submitting = false;
   @observable target = '';
+  @observable loading = false;
 
   constructor(rootStore: RootStore) {
     makeObservable(this);
@@ -59,12 +56,15 @@ export default class ActivityStore {
   @action
   loadActivities = async () => {
     this.loadingInitial = true;
+
     try {
       const res = await agent.Activities.list();
 
       runInAction(() => {
         res.forEach((activity) => {
-          activity.date = new Date(activity.date);
+          // call the function to set the props of activity
+          setActivityProps(activity, this.rootStore.userStore.user!);
+
           this.activityRegistry.set(activity.id, activity);
         });
       });
@@ -92,7 +92,8 @@ export default class ActivityStore {
       try {
         activity = await agent.Activities.details(id);
         runInAction(() => {
-          activity.date = new Date(activity.date);
+          setActivityProps(activity, this.rootStore.userStore.user!);
+
           this.activity = activity;
           this.activityRegistry.set(activity.id, activity);
         });
@@ -123,15 +124,23 @@ export default class ActivityStore {
     this.submitting = true;
     try {
       await agent.Activities.create(activity);
+
+      const attendee = createAttendee(this.rootStore.userStore.user!);
+      attendee.isHost = true;
+      let attendees = [];
+      attendees.push(attendee);
+      activity.attendees = attendees;
+      activity.isHost = true;
+
       runInAction(() => {
         this.activityRegistry.set(activity.id, activity);
       });
       history.push(`/activities/${activity.id}`);
     } catch (err) {
       runInAction(() => {
-        toast.error('Problem Submitting Data');
         console.log(err);
       });
+      toast.error('Problem Submitting Data');
     } finally {
       runInAction(() => {
         this.submitting = false;
@@ -183,6 +192,61 @@ export default class ActivityStore {
       runInAction(() => {
         this.submitting = false;
         this.target = '';
+      });
+    }
+  };
+
+  @action
+  attendActivity = async () => {
+    const attendee = createAttendee(this.rootStore.userStore.user!);
+    this.loading = true;
+
+    try {
+      await agent.Activities.attend(this.activity!.id);
+
+      runInAction(() => {
+        if (this.activity) {
+          this.activity.attendees.push(attendee);
+          this.activity.isGoing = true;
+          // update the activity in the act registry
+          this.activityRegistry.set(this.activity.id, this.activity);
+        }
+      });
+    } catch (err) {
+      runInAction(() => {
+        toast.error('Problem signing up to activity');
+        console.log(err);
+      });
+    } finally {
+      runInAction(() => {
+        this.loading = false;
+      });
+    }
+  };
+
+  @action
+  cancelAttendence = async () => {
+    this.loading = true;
+    try {
+      await agent.Activities.unattend(this.activity!.id);
+
+      runInAction(() => {
+        if (this.activity) {
+          this.activity.attendees = this.activity.attendees.filter(
+            (a) => a.username !== this.rootStore.userStore.user!.userName
+          );
+          this.activity.isGoing = false;
+          this.activityRegistry.set(this.activity.id, this.activity);
+        }
+      });
+    } catch (err) {
+      runInAction(() => {
+        toast.error('Problem cancelling attendance');
+        console.log(err);
+      });
+    } finally {
+      runInAction(() => {
+        this.loading = false;
       });
     }
   };

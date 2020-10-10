@@ -1,2 +1,3 @@
 Cache the Activities when loaded on the client to the client
 categories are hardcoded -- add an api endpoint to create a category
+fix the details vaidator on the create activity form

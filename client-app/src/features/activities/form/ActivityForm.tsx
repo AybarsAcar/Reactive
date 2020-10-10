@@ -11,23 +11,18 @@ import SelectInput from '../../../app/common/form/SelectInput';
 import { category } from '../../../app/common/options/categoryOptions';
 import DateInput from '../../../app/common/form/DateInput';
 import { combineDatesAndTime } from '../../../app/common/util/util';
-import {
-  combineValidators,
-  composeValidators,
-  hasLengthGreaterThan,
-  isRequired,
-} from 'revalidate';
+import { combineValidators, isRequired } from 'revalidate';
 import { RootStoreContext } from '../../../app/stores/rootStore';
 
 const validate = combineValidators({
   title: isRequired({ message: 'Event title is required' }),
   category: isRequired({ message: 'Category is required' }),
-  description: composeValidators(
-    isRequired({ message: 'Description is Required' }),
-    hasLengthGreaterThan(20)({
-      message: 'Description needs to be at least 20 characters',
-    })
-  ),
+  // description: composeValidators(
+  //   isRequired({ message: 'Description is Required' }),
+  //   hasLengthGreaterThan(20)({
+  //     message: 'Description needs to be at least 20 characters',
+  //   })
+  // ),
   city: isRequired('city'),
   venue: isRequired('venue'),
   time: isRequired('time'),
