@@ -45,3 +45,8 @@ this is the className given by Semantic UI
 }
 
 /*end home page styles*/
+
+.link-header {
+  text-decoration: underline;
+  color: #fff;
+}

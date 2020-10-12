@@ -1,4 +1,9 @@
 import {
+  HubConnection,
+  HubConnectionBuilder,
+  LogLevel,
+} from '@microsoft/signalr';
+import {
   observable,
   action,
   makeObservable,
@@ -22,6 +27,8 @@ export default class ActivityStore {
   @observable submitting = false;
   @observable target = '';
   @observable loading = false;
+  // hub connection
+  @observable.ref hubConnection: HubConnection | null = null;
 
   constructor(rootStore: RootStore) {
     makeObservable(this);
@@ -130,6 +137,7 @@ export default class ActivityStore {
       let attendees = [];
       attendees.push(attendee);
       activity.attendees = attendees;
+      activity.comments = [];
       activity.isHost = true;
 
       runInAction(() => {
@@ -248,6 +256,66 @@ export default class ActivityStore {
       runInAction(() => {
         this.loading = false;
       });
+    }
+  };
+
+  /* 
+  Hub connection for signalr
+  */
+  @action
+  createHubConnection = (activityId: string) => {
+    this.hubConnection = new HubConnectionBuilder()
+      .withUrl('http://localhost:5000/chat', {
+        accessTokenFactory: () => this.rootStore.commonStore.token!,
+      })
+      .configureLogging(LogLevel.Information)
+      .build();
+
+    // start the connection
+    this.hubConnection
+      .start()
+      .then(() => console.log(this.hubConnection!.state))
+      .then(() => {
+        console.log('Attemting to join group');
+
+        if (this.hubConnection!.state === 'Connected') {
+          this.hubConnection!.invoke('AddToGroup', activityId);
+        }
+      })
+      .catch((err) => console.log('Error establishing connection: ', err));
+
+    // when we receive a comment
+    this.hubConnection.on('RecieveComment', (comment) => {
+      runInAction(() => {
+        this.activity!.comments.push(comment);
+      });
+    });
+
+    //
+    // this.hubConnection.on('Send', (message) => {
+    //   // toast.info(message);
+    // });
+  };
+
+  @action
+  stopHubConnection = () => {
+    this.hubConnection!.invoke('RemoveFromGroup', this.activity!.id)
+      .then(() => {
+        this.hubConnection!.stop();
+      })
+      .then(() => console.log('Connection Stopped'))
+      .catch((err) => console.log(err));
+  };
+
+  @action
+  addComment = async (values: any) => {
+    // valued has to match our Create.cs in our App.Comment
+    values.activityId = this.activity!.id;
+
+    try {
+      await this.hubConnection!.invoke('SendComment', values);
+    } catch (err) {
+      console.log(err);
     }
   };
 }
