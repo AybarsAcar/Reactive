@@ -4,11 +4,11 @@ we have our API calls, HTTP requests in this file
 import axios, { AxiosResponse } from 'axios';
 import { toast } from 'react-toastify';
 import { history } from '../..';
-import { IActivity } from '../models/activity';
+import { IActivitiesEnvelope, IActivity } from '../models/activity';
 import { IPhoto, IProfile } from '../models/profile';
 import { IUser, IUserFormValues } from '../models/user';
 
-axios.defaults.baseURL = 'http://localhost:5000/api';
+axios.defaults.baseURL = process.env.REACT_APP_API_URL;
 
 /* 
 Sending our JWT with all of our requests
@@ -32,10 +32,23 @@ axios.interceptors.response.use(undefined, (error) => {
     toast.error('Network error - Server is not Running');
   }
 
-  const { status, data, config } = error.response;
+  const { status, data, config, headers } = error.response;
 
   if (status === 404) {
     history.push('/not-found');
+  }
+
+  // check if the user token expires
+  if (
+    status === 401 &&
+    headers['www-authenticate'].includes('The token expired')
+  ) {
+    console.log('HERE');
+    console.log(error.response.headers);
+
+    window.localStorage.removeItem('jwt');
+    history.push('/');
+    toast.info('Your session has expired, please login again');
   }
 
   if (
@@ -54,19 +67,17 @@ axios.interceptors.response.use(undefined, (error) => {
 
 const responseBody = (response: AxiosResponse) => response.data;
 
-const sleep = (ms: number) => (response: AxiosResponse) => {
-  return new Promise<AxiosResponse>((resolve) =>
-    setTimeout(() => resolve(response), ms)
-  );
-};
+// const sleep = (ms: number) => (response: AxiosResponse) => {
+//   return new Promise<AxiosResponse>((resolve) =>
+//     setTimeout(() => resolve(response), ms)
+//   );
+// };
 
 const requests = {
-  get: (url: string) => axios.get(url).then(sleep(1000)).then(responseBody),
-  post: (url: string, body: {}) =>
-    axios.post(url, body).then(sleep(1000)).then(responseBody),
-  put: (url: string, body: {}) =>
-    axios.put(url, body).then(sleep(1000)).then(responseBody),
-  del: (url: string) => axios.delete(url).then(sleep(1000)).then(responseBody),
+  get: (url: string) => axios.get(url).then(responseBody),
+  post: (url: string, body: {}) => axios.post(url, body).then(responseBody),
+  put: (url: string, body: {}) => axios.put(url, body).then(responseBody),
+  del: (url: string) => axios.delete(url).then(responseBody),
   postForm: (url: string, file: Blob) => {
     let formData = new FormData();
     // make sure the key matches our Servers
@@ -83,7 +94,8 @@ const requests = {
 our Activities CRUD on the client side
 */
 const Activities = {
-  list: (): Promise<IActivity[]> => requests.get('/activities'),
+  list: (params: URLSearchParams): Promise<IActivitiesEnvelope> =>
+    axios.get('/activities', { params: params }).then(responseBody),
   details: (id: string): Promise<IActivity> =>
     requests.get(`/activities/${id}`),
   create: (activity: IActivity) => requests.post('/activities', activity),
@@ -103,6 +115,10 @@ const User = {
     requests.post(`/user/login`, user),
   register: (user: IUserFormValues): Promise<IUser> =>
     requests.post(`/user/register`, user),
+
+  // we get the accessToken from fb
+  fbLogin: (accessToken: string) =>
+    requests.post(`/user/facebook`, { accessToken }),
 };
 
 /* 
@@ -122,6 +138,8 @@ const Profiles = {
   unfollow: (username: string) => requests.del(`/profiles/${username}/follow`),
   listFollowings: (username: string, predicate: string) =>
     requests.get(`/profiles/${username}/follow?predicate=${predicate}`),
+  listActivities: (username: string, predicate: string) =>
+    requests.get(`/profiles/${username}/activities?predicate=${predicate}`),
 };
 
 export default {

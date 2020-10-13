@@ -41,7 +41,7 @@ namespace API
 
     public IConfiguration Configuration { get; }
 
-    public void ConfigureServices(IServiceCollection services)
+    public void ConfigureDevelopmentServices(IServiceCollection services)
     {
       services.AddDbContext<DataContext>(opt =>
       {
@@ -49,6 +49,22 @@ namespace API
         opt.UseSqlite(Configuration.GetConnectionString("DefaultConnection"));
       });
 
+      ConfigureServices(services);
+    }
+
+    public void ConfigureProductionServices(IServiceCollection services)
+    {
+      services.AddDbContext<DataContext>(opt =>
+      {
+        opt.UseLazyLoadingProxies();
+        opt.UseMySql(Configuration.GetConnectionString("DefaultConnection"));
+      });
+
+      ConfigureServices(services);
+    }
+
+    public void ConfigureServices(IServiceCollection services)
+    {
       services.AddCors(opt =>
       {
         opt.AddPolicy("CorsPolicy", policy =>
@@ -56,6 +72,7 @@ namespace API
           policy
             .AllowAnyHeader()
             .AllowAnyMethod()
+            .WithExposedHeaders("WWW-Authenticate")
             .WithOrigins("http://localhost:3000")
             .AllowCredentials();
         });
@@ -104,7 +121,9 @@ namespace API
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = key,
             ValidateAudience = false,
-            ValidateIssuer = false
+            ValidateIssuer = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
           };
 
           // signalR authentication options
@@ -132,8 +151,12 @@ namespace API
 
       services.AddScoped<IProfileReader, ProfileReader>();
 
+      services.AddScoped<IFacebookAccessor, FacebookAccessor>();
+
       // cloudinary -- so we have access to our api keys secrets, and cloud name
       services.Configure<CloudinarySettings>(Configuration.GetSection("Cloudinary"));
+
+      services.Configure<FacebookAppSettings>(Configuration.GetSection("Authentication:Facebook"));
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -149,6 +172,11 @@ namespace API
 
       //   app.UseHttpsRedirection();
 
+      // Serving Stating Files After Build
+      app.UseDefaultFiles();
+      app.UseStaticFiles();
+      // ends
+
       app.UseRouting();
 
       app.UseCors("CorsPolicy");
@@ -161,6 +189,7 @@ namespace API
       {
         endpoints.MapControllers();
         endpoints.MapHub<ChatHub>("/chat");
+        endpoints.MapFallbackToController("Index", "Fallback");
       });
     }
   }

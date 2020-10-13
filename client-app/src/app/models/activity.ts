@@ -1,3 +1,11 @@
+/* 
+what we return with pagination
+*/
+export interface IActivitiesEnvelope {
+  activities: IActivity[];
+  activityCount: number;
+}
+
 export interface IActivity {
   id: string;
   category: string;
