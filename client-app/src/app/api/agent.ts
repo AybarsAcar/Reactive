@@ -119,6 +119,8 @@ const User = {
   // we get the accessToken from fb
   fbLogin: (accessToken: string) =>
     requests.post(`/user/facebook`, { accessToken }),
+
+  refreshToken: (): Promise<IUser> => requests.post(`/user/refreshToken`, {}),
 };
 
 /* 

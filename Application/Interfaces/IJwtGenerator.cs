@@ -6,5 +6,7 @@ namespace Application.Interfaces
   {
     //   we get a string back which is the JWT
     string CreateToken(AppUser user);
+
+    RefreshToken GenerateRefreshToken();
   }
 }

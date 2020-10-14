@@ -28,12 +28,12 @@ const App: React.FC<RouteComponentProps> = ({ location }) => {
 
   // check to see if there is token
   useEffect(() => {
-    if (token) {
+    if (token && !appLoaded) {
       getUser().finally(() => setAppLoaded());
     } else {
       setAppLoaded();
     }
-  }, [getUser, setAppLoaded, token]);
+  }, [getUser, setAppLoaded, token, appLoaded]);
 
   if (!appLoaded) {
     return <LoadingComponent content="Loading app . . ." />;

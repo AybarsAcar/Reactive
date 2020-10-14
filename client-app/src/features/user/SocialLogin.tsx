@@ -1,12 +1,14 @@
+import { observer } from 'mobx-react-lite';
 import React from 'react';
 import FacebookLogin from 'react-facebook-login/dist/facebook-login-render-props';
 import { Button, Icon } from 'semantic-ui-react';
 
 interface IProps {
   fbCallback: (response: any) => void;
+  loading: boolean;
 }
 
-const SocialLogin: React.FC<IProps> = ({ fbCallback }) => {
+const SocialLogin: React.FC<IProps> = ({ fbCallback, loading }) => {
   return (
     <FacebookLogin
       appId="279477189767383"
@@ -18,6 +20,7 @@ const SocialLogin: React.FC<IProps> = ({ fbCallback }) => {
           type="button"
           fluid
           color="facebook"
+          loading={loading}
         >
           <Icon name="facebook" />
           Login with facebook
@@ -27,4 +30,4 @@ const SocialLogin: React.FC<IProps> = ({ fbCallback }) => {
   );
 };
 
-export default SocialLogin;
+export default observer(SocialLogin);

@@ -58,7 +58,7 @@ namespace Infrastructure.Security
             $"{endpoint}?access_token={accessToken}&{args}"
         );
 
-      if (response.IsSuccessStatusCode)
+      if (!response.IsSuccessStatusCode)
       {
         return default(T);
       }
