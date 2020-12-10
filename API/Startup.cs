@@ -11,6 +11,7 @@ using Application.Profiles;
 using AutoMapper;
 using Domain;
 using FluentValidation.AspNetCore;
+using Infrastructure.Email;
 using Infrastructure.Photos;
 using Infrastructure.Security;
 using MediatR;
@@ -96,10 +97,14 @@ namespace API
         });
 
       // Adding the netcore Identiy
-      var builder = services.AddIdentityCore<AppUser>();
+      var builder = services.AddIdentityCore<AppUser>(options =>
+      {
+        options.SignIn.RequireConfirmedEmail = true;
+      });
       var identityBuilder = new IdentityBuilder(builder.UserType, builder.Services);
       identityBuilder.AddEntityFrameworkStores<DataContext>();
       identityBuilder.AddSignInManager<SignInManager<AppUser>>();
+      identityBuilder.AddDefaultTokenProviders();
 
       // custom auth middleware for IsHost
       services.AddAuthorization(opt =>
@@ -153,10 +158,14 @@ namespace API
 
       services.AddScoped<IFacebookAccessor, FacebookAccessor>();
 
+      services.AddScoped<IEmailSender, EmailSender>();
+
       // cloudinary -- so we have access to our api keys secrets, and cloud name
       services.Configure<CloudinarySettings>(Configuration.GetSection("Cloudinary"));
 
       services.Configure<FacebookAppSettings>(Configuration.GetSection("Authentication:Facebook"));
+
+      services.Configure<SendGridSettings>(Configuration.GetSection("SendGrid"));
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -189,7 +198,7 @@ namespace API
       {
         endpoints.MapControllers();
         endpoints.MapHub<ChatHub>("/chat");
-        endpoints.MapFallbackToController("Index", "Fallback");
+        // endpoints.MapFallbackToController("Index", "Fallback");
       });
     }
   }

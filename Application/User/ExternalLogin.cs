@@ -61,7 +61,8 @@ namespace Application.User
           DisplayName = userInfo.Name,
           Id = userInfo.Id,
           Email = userInfo.Email,
-          UserName = "fb_" + userInfo.Id
+          UserName = "fb_" + userInfo.Id,
+          EmailConfirmed = true // because facebook confirmed their email already
         };
 
         var photo = new Photo

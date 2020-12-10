@@ -21,14 +21,16 @@ namespace Persistence
                         Id = "a",
                         DisplayName = "Bob",
                         UserName = "bob",
-                        Email = "bob@test.com"
+                        Email = "bob@test.com",
+                        EmailConfirmed = true
                     },
                     new AppUser
                     {
                         Id = "b",
                         DisplayName = "Jane",
                         UserName = "jane",
-                        Email = "jane@test.com"
+                        Email = "jane@test.com",
+                        EmailConfirmed = true
                     },
                     new AppUser
                     {

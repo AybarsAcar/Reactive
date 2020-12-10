@@ -1,6 +1,6 @@
-/* 
-we have our API calls, HTTP requests in this file
-*/
+/**
+ * we have our API calls, HTTP requests in this file
+ */
 import axios, { AxiosResponse } from 'axios';
 import { toast } from 'react-toastify';
 import { history } from '../..';
@@ -10,9 +10,9 @@ import { IUser, IUserFormValues } from '../models/user';
 
 axios.defaults.baseURL = process.env.REACT_APP_API_URL;
 
-/* 
-Sending our JWT with all of our requests
-*/
+/**
+ * Sending our JWT with all of our requests
+ */
 axios.interceptors.request.use(
   (config) => {
     const token = window.localStorage.getItem('jwt');
@@ -24,9 +24,9 @@ axios.interceptors.request.use(
   }
 );
 
-/* 
-Error interceptors on the client
-*/
+/**
+ * Error interceptors on the client
+ */
 axios.interceptors.response.use(undefined, (error) => {
   if (error.message === 'Network Error' && !error.response) {
     toast.error('Network error - Server is not Running');
@@ -90,9 +90,9 @@ const requests = {
   },
 };
 
-/* 
-our Activities CRUD on the client side
-*/
+/**
+ * our Activities CRUD on the client side
+ */
 const Activities = {
   list: (params: URLSearchParams): Promise<IActivitiesEnvelope> =>
     axios.get('/activities', { params: params }).then(responseBody),
@@ -106,9 +106,9 @@ const Activities = {
   unattend: (id: string) => requests.del(`/activities/${id}/attend`),
 };
 
-/* 
-user operations
-*/
+/**
+ * user operations
+ */
 const User = {
   current: (): Promise<IUser> => requests.get('/user'),
   login: (user: IUserFormValues): Promise<IUser> =>
@@ -121,11 +121,19 @@ const User = {
     requests.post(`/user/facebook`, { accessToken }),
 
   refreshToken: (): Promise<IUser> => requests.post(`/user/refreshToken`, {}),
+
+  verifyEmai: async (token: string, email: string): Promise<void> => {
+    requests.post(`/user/verifyEmail`, { token, email });
+  },
+
+  resendVerifyEmailConfirm: async (email: string): Promise<void> => {
+    requests.get(`/user/resendEmailVerification?email=${email}`);
+  },
 };
 
-/* 
-Profile Related Requests
-*/
+/**
+ * Profile Related Requests
+ */
 const Profiles = {
   get: (username: string): Promise<IProfile> =>
     requests.get(`/profiles/${username}`),

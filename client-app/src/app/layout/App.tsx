@@ -20,6 +20,8 @@ import LoadingComponent from './LoadingComponent';
 import ModalContainer from '../common/modals/ModalContainer';
 import ProfilePage from '../../features/profiles/ProfilePage';
 import PrivateRoute from './PrivateRoute';
+import RegisterSuccess from '../../features/user/RegisterSuccess';
+import VerifyEmail from '../../features/user/VerifyEmail';
 
 const App: React.FC<RouteComponentProps> = ({ location }) => {
   const rootStore = useContext(RootStoreContext);
@@ -72,6 +74,13 @@ const App: React.FC<RouteComponentProps> = ({ location }) => {
                 <PrivateRoute
                   path="/profile/:username"
                   component={ProfilePage}
+                />
+
+                <Route path="/user/verifyEmail" component={VerifyEmail} />
+
+                <Route
+                  path="/user/registerSuccess"
+                  component={RegisterSuccess}
                 />
 
                 {/* NOT FOUND PAGE */}
